@@ -2460,10 +2460,13 @@ ARMTargetLowering::LowerToTLSExecModels(GlobalAddressSDNode *GA,
 SDValue
 ARMTargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
   // TODO: implement the "local dynamic" model
+#if 0 // dano - could add in isTargetDarwin()
   assert(Subtarget->isTargetELF() &&
          "TLS not implemented for non-ELF targets");
+#endif
   GlobalAddressSDNode *GA = cast<GlobalAddressSDNode>(Op);
 
+  if (Subtarget->isTargetELF()) {
   TLSModel::Model model = getTargetMachine().getTLSModel(GA->getGlobal());
 
   switch (model) {
@@ -2475,6 +2478,63 @@ ARMTargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
       return LowerToTLSExecModels(GA, DAG, model);
   }
   llvm_unreachable("bogus TLS model");
+  }
+
+  // dano - copied and modified from ARMTargetLowering::LowerGlobalAddressDarwin
+  if (Subtarget->isTargetDarwin()) {
+    EVT PtrVT = getPointerTy();
+    SDLoc dl(Op);
+    const GlobalValue *GV = GA->getGlobal();
+    Reloc::Model RelocM = getTargetMachine().getRelocationModel();
+
+    if (Subtarget->useMovt())
+      ++NumMovwMovt;
+
+    // FIXME: Once remat is capable of dealing with instructions with register
+    // operands, expand this into multiple nodes
+    unsigned Wrapper =
+      RelocM == Reloc::PIC_ ? ARMISD::WrapperPIC : ARMISD::Wrapper;
+
+    // dano - Get an internal compiler error unless I cheat and temp change to
+    // no thread local.  There must be a better way.
+    GlobalVariable *GVar = const_cast<GlobalVariable*>(dyn_cast<GlobalVariable>(GV));
+    GlobalVariable::ThreadLocalMode tlsMode = GVar->getThreadLocalMode();
+    GVar->setThreadLocalMode(GlobalVariable::NotThreadLocal);
+    SDValue G = DAG.getTargetGlobalAddress(GV, dl, PtrVT, 0, ARMII::MO_NONLAZY);
+    SDValue Result = DAG.getNode(Wrapper, dl, PtrVT, G);
+    GVar->setThreadLocalMode(tlsMode);
+
+    if (Subtarget->GVIsIndirectSymbol(GV, RelocM))
+      Result = DAG.getLoad(PtrVT, dl, DAG.getEntryNode(), Result,
+                           MachinePointerInfo::getGOT(), false, false, false, 0);
+
+    // dano - emit a call to __tls_get_addr(TLVDescriptor *Result)
+    //   blx ___tls_get_addr
+    // Really want this to be be an indirect call (*Result->thunk)(Result)
+    //   ld r1, [r0]
+    //   blx r1
+    // but don't know how to do that yet.  help?
+    SDValue Chain = DAG.getEntryNode();
+    ArgListTy Args;
+    ArgListEntry Entry;
+    Entry.Node = Result;
+    Entry.Ty = (Type *) Type::getInt32Ty(*DAG.getContext());
+    Args.push_back(Entry);
+
+    TargetLowering::CallLoweringInfo CLI
+      (Chain,
+       (Type *) Type::getInt32Ty(*DAG.getContext()),
+       false, false, false, false,
+       0, CallingConv::C, /*isTailCall=*/false,
+       /*doesNotRet=*/false, /*isReturnValueUsed=*/true,
+       DAG.getExternalSymbol("__tls_get_addr", PtrVT),
+       //Result,
+       Args, DAG, dl);
+    std::pair<SDValue, SDValue> CallResult = LowerCallTo(CLI);
+    return CallResult.first;
+  }
+
+  llvm_unreachable("TLS not implemented for this target.");
 }
 
 SDValue ARMTargetLowering::LowerGlobalAddressELF(SDValue Op,

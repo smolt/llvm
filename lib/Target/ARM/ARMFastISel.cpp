@@ -678,7 +678,13 @@ unsigned ARMFastISel::ARMMaterializeGV(const GlobalValue *GV, MVT VT) {
   // FastISel TLS support on non-MachO is broken, punt to SelectionDAG.
   const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GV);
   bool IsThreadLocal = GVar && GVar->isThreadLocal();
+#if 0
   if (!Subtarget->isTargetMachO() && IsThreadLocal) return 0;
+#else
+  // dano - I cannot get TLS to work here, despite the above comment, so
+  // bailout and let ARMISelLowering.cpp do the work.
+  if (IsThreadLocal) return 0;
+#endif
 
   // Use movw+movt when possible, it avoids constant pool entries.
   // Non-darwin targets only support static movt relocations in FastISel.
