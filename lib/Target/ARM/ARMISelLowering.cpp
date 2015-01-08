@@ -2661,7 +2661,7 @@ ARMTargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
     const GlobalValue *GV = GA->getGlobal();
     Reloc::Model RelocM = getTargetMachine().getRelocationModel();
 
-    if (Subtarget->useMovt())
+    if (Subtarget->useMovt(DAG.getMachineFunction()))
       ++NumMovwMovt;
 
     // FIXME: Once remat is capable of dealing with instructions with register
@@ -2695,15 +2695,12 @@ ARMTargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
     Entry.Ty = (Type *) Type::getInt32Ty(*DAG.getContext());
     Args.push_back(Entry);
 
-    TargetLowering::CallLoweringInfo CLI
-      (Chain,
-       (Type *) Type::getInt32Ty(*DAG.getContext()),
-       false, false, false, false,
-       0, CallingConv::C, /*isTailCall=*/false,
-       /*doesNotRet=*/false, /*isReturnValueUsed=*/true,
-       DAG.getExternalSymbol("__tls_get_addr", PtrVT),
-       //Result,
-       Args, DAG, dl);
+    // copied, modified from ARMTargetLowering::LowerToTLSGeneralDynamicModel
+    TargetLowering::CallLoweringInfo CLI(DAG);
+    CLI.setDebugLoc(dl).setChain(Chain)
+        .setCallee(CallingConv::C, Type::getInt32Ty(*DAG.getContext()),
+                   DAG.getExternalSymbol("__tls_get_addr", PtrVT), std::move(Args),
+                   0);
     std::pair<SDValue, SDValue> CallResult = LowerCallTo(CLI);
     return CallResult.first;
   }
