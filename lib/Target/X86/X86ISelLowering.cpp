@@ -13551,14 +13551,16 @@ X86TargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
       SDValue Chain = DAG.getEntryNode();
       ArgListTy Args;
       ArgListEntry Entry;
+      // TODO: there musg be a better way to get a Pointer that is correct
+      Type* Ty = Subtarget->is64Bit() ? (Type*)Type::getInt64Ty(*DAG.getContext()) : (Type*)Type::getInt32Ty(*DAG.getContext());
       Entry.Node = Result;
-      Entry.Ty = (Type *) Type::getInt32Ty(*DAG.getContext()); // Hmm?
+      Entry.Ty = Ty; // Hmm?
       Args.push_back(Entry);
 
       // copied, modified from ARMTargetLowering::LowerToTLSGeneralDynamicModel
       TargetLowering::CallLoweringInfo CLI(DAG);
       CLI.setDebugLoc(DL).setChain(Chain)
-        .setCallee(CallingConv::C, Type::getInt32Ty(*DAG.getContext()),
+        .setCallee(CallingConv::C, Ty,
                    DAG.getExternalSymbol("__tls_get_addr", getPointerTy()), std::move(Args),
                    0);
       std::pair<SDValue, SDValue> CallResult = LowerCallTo(CLI);
