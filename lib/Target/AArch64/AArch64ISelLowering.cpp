@@ -3392,6 +3392,30 @@ AArch64TargetLowering::LowerDarwinGlobalTLSAddress(SDValue Op,
                                                    SelectionDAG &DAG) const {
   assert(Subtarget->isTargetDarwin() && "TLS only supported on Darwin");
 
+  if (Subtarget->isTargetIOS()) {
+    // Hack in simple TLS path for iOS
+    // Use LowerGlobal directly first, then call __tls_get_addr() with it as
+    // first arg.
+    SDLoc DL(Op);
+    SDValue Result = LowerGlobalAddress(Op, DAG);
+    SDValue Chain = DAG.getEntryNode();
+    ArgListTy Args;
+    ArgListEntry Entry;
+    Type* Ty =(Type*)Type::getInt64Ty(*DAG.getContext());
+    Entry.Node = Result;
+    Entry.Ty = Ty;
+    Args.push_back(Entry);
+
+    // copied, modified from ARMTargetLowering::LowerToTLSGeneralDynamicModel
+    TargetLowering::CallLoweringInfo CLI(DAG);
+    CLI.setDebugLoc(DL).setChain(Chain)
+      .setCallee(CallingConv::C, Ty,
+                 DAG.getExternalSymbol("__tls_get_addr", getPointerTy()), std::move(Args),
+                 0);
+    std::pair<SDValue, SDValue> CallResult = LowerCallTo(CLI);
+    return CallResult.first;
+  }
+  
   SDLoc DL(Op);
   MVT PtrVT = getPointerTy(DAG.getDataLayout());
   const GlobalValue *GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
