@@ -12448,6 +12448,32 @@ X86TargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
   }
 
   if (Subtarget->isTargetDarwin()) {
+    if (Subtarget->getTargetTriple().isiOS()) {
+      // Hack in simple TLS path for iOS Simulator
+      // Use LowerGlobal directly first, then call __tls_get_addr() with it as
+      // first arg.
+      SDLoc DL(Op);
+      SDValue Result = LowerGlobalAddress(GV, DL, GA->getOffset(), DAG);
+      SDValue Chain = DAG.getEntryNode();
+      ArgListTy Args;
+      ArgListEntry Entry;
+      // TODO: there musg be a better way to get a Pointer that is correct
+      Type* Ty = Subtarget->is64Bit() ? (Type*)Type::getInt64Ty(*DAG.getContext()) : (Type*)Type::getInt32Ty(*DAG.getContext());
+      Entry.Node = Result;
+      Entry.Ty = Ty; // Hmm?
+      Args.push_back(Entry);
+
+      // copied, modified from ARMTargetLowering::LowerToTLSGeneralDynamicModel
+      TargetLowering::CallLoweringInfo CLI(DAG);
+      CLI.setDebugLoc(DL).setChain(Chain)
+        .setCallee(CallingConv::C, Ty,
+                   DAG.getExternalSymbol("__tls_get_addr", getPointerTy()), std::move(Args),
+                   0);
+      std::pair<SDValue, SDValue> CallResult = LowerCallTo(CLI);
+      return CallResult.first;
+    }
+
+    // Normal TLS path for Darwin
     // Darwin only has one model of TLS.  Lower to that.
     unsigned char OpFlag = 0;
     unsigned WrapperKind = Subtarget->isPICStyleRIPRel() ?
