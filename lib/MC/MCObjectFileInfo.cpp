@@ -90,6 +90,16 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(Triple T) {
                            MachO::S_THREAD_LOCAL_ZEROFILL,
                            SectionKind::getThreadBSS());
 
+  // Use a different section named __iostlv for thread local variable
+  // descriptors on iOS since ld as of Xcode 7.0 refuses to link object files
+  // containing these for iOS.  It won't be as efficient a
+  // S_THREAD_LOCAL_VARIABLES type but it works.
+  if (T.isiOS()) {
+      TLSTLVSection
+          = Ctx->getMachOSection("__DATA", "__iostlv",
+                                 MachO::S_REGULAR,
+                                 SectionKind::getDataRel());
+  } else
   // TODO: Verify datarel below.
   TLSTLVSection // .tlv
       = Ctx->getMachOSection("__DATA", "__thread_vars",
