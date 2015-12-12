@@ -2656,7 +2656,7 @@ ARMTargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
 
   // dano - copied and modified from ARMTargetLowering::LowerGlobalAddressDarwin
   if (Subtarget->isTargetDarwin()) {
-    EVT PtrVT = getPointerTy();
+    MVT PtrVT = getPointerTy(DAG.getDataLayout());
     SDLoc dl(Op);
     const GlobalValue *GV = GA->getGlobal();
     Reloc::Model RelocM = getTargetMachine().getRelocationModel();
@@ -2680,7 +2680,8 @@ ARMTargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
 
     if (Subtarget->GVIsIndirectSymbol(GV, RelocM))
       Result = DAG.getLoad(PtrVT, dl, DAG.getEntryNode(), Result,
-                           MachinePointerInfo::getGOT(), false, false, false, 0);
+                           MachinePointerInfo::getGOT(DAG.getMachineFunction()),
+                           false, false, false, 0);
 
     // dano - emit a call to __tls_get_addr(TLVDescriptor *Result)
     //   blx ___tls_get_addr

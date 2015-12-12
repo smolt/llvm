@@ -3397,6 +3397,7 @@ AArch64TargetLowering::LowerDarwinGlobalTLSAddress(SDValue Op,
     // Use LowerGlobal directly first, then call __tls_get_addr() with it as
     // first arg.
     SDLoc DL(Op);
+    MVT PtrVT = getPointerTy(DAG.getDataLayout());
     SDValue Result = LowerGlobalAddress(Op, DAG);
     SDValue Chain = DAG.getEntryNode();
     ArgListTy Args;
@@ -3410,7 +3411,7 @@ AArch64TargetLowering::LowerDarwinGlobalTLSAddress(SDValue Op,
     TargetLowering::CallLoweringInfo CLI(DAG);
     CLI.setDebugLoc(DL).setChain(Chain)
       .setCallee(CallingConv::C, Ty,
-                 DAG.getExternalSymbol("__tls_get_addr", getPointerTy()), std::move(Args),
+                 DAG.getExternalSymbol("__tls_get_addr", PtrVT), std::move(Args),
                  0);
     std::pair<SDValue, SDValue> CallResult = LowerCallTo(CLI);
     return CallResult.first;

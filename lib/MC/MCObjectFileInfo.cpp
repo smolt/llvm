@@ -98,7 +98,7 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(Triple T) {
       TLSTLVSection
           = Ctx->getMachOSection("__DATA", "__iostlv",
                                  MachO::S_REGULAR,
-                                 SectionKind::getDataRel());
+                                 SectionKind::getData());
   } else
   // TODO: Verify datarel below.
   TLSTLVSection // .tlv

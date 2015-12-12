@@ -12467,7 +12467,7 @@ X86TargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
       TargetLowering::CallLoweringInfo CLI(DAG);
       CLI.setDebugLoc(DL).setChain(Chain)
         .setCallee(CallingConv::C, Ty,
-                   DAG.getExternalSymbol("__tls_get_addr", getPointerTy()), std::move(Args),
+                   DAG.getExternalSymbol("__tls_get_addr", PtrVT), std::move(Args),
                    0);
       std::pair<SDValue, SDValue> CallResult = LowerCallTo(CLI);
       return CallResult.first;
