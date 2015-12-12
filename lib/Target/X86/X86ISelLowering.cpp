@@ -12448,7 +12448,8 @@ X86TargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
   }
 
   if (Subtarget->isTargetDarwin()) {
-    if (Subtarget->getTargetTriple().isiOS()) {
+    if (Subtarget->getTargetTriple().isiOS() ||
+        Subtarget->getTargetTriple().isWatchOS()) {
       // Hack in simple TLS path for iOS Simulator
       // Use LowerGlobal directly first, then call __tls_get_addr() with it as
       // first arg.
