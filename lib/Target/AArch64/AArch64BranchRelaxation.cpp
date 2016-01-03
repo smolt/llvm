@@ -26,8 +26,10 @@ using namespace llvm;
 
 #define DEBUG_TYPE "aarch64-branch-relax"
 
+// dano TODO: resolve evenutally, but for now remove commandline conflict
+// CommandLine Error: Option 'aarch64-branch-relax' registered more than once!
 static cl::opt<bool>
-BranchRelaxation("aarch64-branch-relax", cl::Hidden, cl::init(true),
+BranchRelaxation("aarch64-branch-relax-xyzzy", cl::Hidden, cl::init(true),
                  cl::desc("Relax out of range conditional branches"));
 
 static cl::opt<unsigned>

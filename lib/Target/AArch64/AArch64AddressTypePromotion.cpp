@@ -47,8 +47,10 @@ using namespace llvm;
 
 #define DEBUG_TYPE "aarch64-type-promotion"
 
+// dano TODO: resolve evenutally, but for now remove commandline conflict
+// CommandLine Error: Option 'aarch64-type-promotion' registered more than once!
 static cl::opt<bool>
-EnableAddressTypePromotion("aarch64-type-promotion", cl::Hidden,
+EnableAddressTypePromotion("aarch64-type-promotion-xyzzy", cl::Hidden,
                            cl::desc("Enable the type promotion pass"),
                            cl::init(true));
 static cl::opt<bool>

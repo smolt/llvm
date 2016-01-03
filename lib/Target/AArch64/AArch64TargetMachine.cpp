@@ -44,8 +44,10 @@ static cl::opt<bool>
 EnablePromoteConstant("aarch64-promote-const", cl::desc("Enable the promote "
                       "constant pass"), cl::init(true), cl::Hidden);
 
+// dano TODO: resolve evenutally, but for now remove commandline conflict
+// CommandLine Error: Option 'aarch64-collect-loh' registered more than once!
 static cl::opt<bool>
-EnableCollectLOH("aarch64-collect-loh", cl::desc("Enable the pass that emits the"
+EnableCollectLOH("aarch64-collect-loh-xyzzy", cl::desc("Enable the pass that emits the"
                  " linker optimization hints (LOH)"), cl::init(true),
                  cl::Hidden);
 

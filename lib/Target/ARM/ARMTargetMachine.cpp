@@ -37,8 +37,10 @@ EnableAtomicTidy("arm-atomic-cfg-tidy", cl::Hidden,
                           " to make use of cmpxchg flow-based information"),
                  cl::init(true));
 
+// dano TODO: resolve evenutally, but for now remove commandline conflict
+// CommandLine Error: Option 'arm-load-store-opt' registered more than once!
 static cl::opt<bool>
-EnableARMLoadStoreOpt("arm-load-store-opt", cl::Hidden,
+EnableARMLoadStoreOpt("arm-load-store-opt-xyzzy", cl::Hidden,
                       cl::desc("Enable ARM load/store optimization pass"),
                       cl::init(true));
 
