@@ -502,7 +502,19 @@ void ARMFrameLowering::emitPrologue(MachineFunction &MF,
       DefCFAOffsetCandidates.addInst(std::prev(MBBI), NumBytes);
     }
 
+    // dano: force watchOS to adjust the stack in function epilog using the
+    // frame pointer.  This is a workaround for a bug elsewhere, just not sure
+    // exactly where the bug is.  It happens when stack adjustment is needed around
+    // functions that throw and stack is not fixed in landing pad.  Stack is
+    // never corrected, leaks, and registers are incorrectly restored in
+    // epilog if stack not restored from frame pointer.
+    // Can create stack leak with clang++ by using VLA and variadic call, but
+    // it then falls back to using frame pointer.
+#if 0
     if (HasFP && isARM)
+#else
+    if (HasFP && (isARM || STI.isTargetWatchOS()))
+#endif
       // Restore from fp only in ARM mode: e.g. sub sp, r7, #24
       // Note it's not safe to do this in Thumb2 mode because it would have
       // taken two instructions:
@@ -1503,6 +1515,12 @@ void ARMFrameLowering::determineCalleeSaves(MachineFunction &MF,
   // FIXME: It will be better just to find spare register here.
   if (AFI->isThumb2Function() &&
       (MFI->hasVarSizedObjects() || RegInfo->needsStackRealignment(MF)))
+    SavedRegs.set(ARM::R4);
+
+  // dano: force spill of r4 for watchOS hack in which we always restore sp
+  // from fp.  r4 is needed in epilog to restore sp.
+  // TODO: don't do this for cases when r4 not needed
+  if (STI.isTargetWatchOS())
     SavedRegs.set(ARM::R4);
 
   if (AFI->isThumb1OnlyFunction()) {
